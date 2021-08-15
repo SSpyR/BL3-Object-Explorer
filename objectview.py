@@ -69,7 +69,7 @@ class BL3Object:
 	def get_refs_from(self, name):
 		"""
 		Utilizes bl3data.py from apocalyptech to get all Objects
-		Which the Object given references
+		Which the given Object references
 		"""
 		name=name.replace('.json','')
 		name=f'/{name}'
@@ -186,7 +186,7 @@ class FileSearch:
 
 def get_json(file_name):
 	"""
-	Function for Opening JSON Viewer of Object
+	Function for getting JSON data of Object
 	"""
 	global zipname
 
@@ -201,7 +201,7 @@ def get_json(file_name):
 
 def get_obj_name(file_name):
 	"""
-	Helper Function to get object name from path
+	Helper Function to get Object name from path
 	"""
 	file_name=file_name.split('/')
 	obj_name=file_name[len(file_name)-1]
@@ -237,8 +237,3 @@ def main():
 if __name__=='__main__':
 	print('Starting program')
 	main()
-
-
-
-
-
