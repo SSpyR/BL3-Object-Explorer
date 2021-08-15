@@ -5,7 +5,7 @@
 #            glob, glob_data, get_export_idx, get_exports, get_refs_to_data, get_refs_from_data,
 #            datatable_lookup, process_bvc, process_bvc_struct, cache_part_category_name, guess_part_category_name,
 #            get_parts_category_name, get_extra_anoints
-#   Altered: init
+#   Altered: init, connect_db
 # ]
 
 # Copyright 2019-2020 Christopher J. Kucera

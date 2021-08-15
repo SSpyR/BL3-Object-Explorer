@@ -24,6 +24,9 @@
 #TODO Probably needs more error handling
 #TODO Window resizing?
 #TODO Try making an exe and see what happens?
+#TODO Find a way to make Enter press Search?
+#TODO Installer might be the better play?
+#TODO Look into whether zipping the data, or unpacking it directly from user's files is better
 
 import os
 import PySimpleGUI as gui
@@ -32,12 +35,12 @@ from bl3data import BL3Data
 
 """
 Initializing some Global Values for ease of use
+Version Number: 0.1.0
 """
 data=BL3Data()
 results=[]
 cwd=os.path.dirname(__file__)
 zipname=os.path.join(cwd, 'utils/objects.zip')
-zipname=zipname.replace('\\', '/')
 
 class BL3Object:
 	"""
@@ -191,8 +194,8 @@ def get_json(file_name):
 			data=data.strip('\n')
 			
 			return data
-	
-	
+
+
 def get_obj_name(file_name):
 	"""
 	Helper Function to get object name from path
