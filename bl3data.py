@@ -1,7 +1,7 @@
 # bl3data.py
 # Original: https://github.com/BLCM/bl3mods/blob/master/python_mod_helpers/bl3data/bl3data.py
 # Modifications: [
-#   Removed: Global Lists, enforce_config_section, serialize_path, get_data, find, find_data, 
+#   Removed: Global Lists, Some Unused Imports, enforce_config_section, serialize_path, get_data, find, find_data, 
 #            glob, glob_data, get_export_idx, get_exports, get_refs_to_data, get_refs_from_data,
 #            datatable_lookup, process_bvc, process_bvc_struct, cache_part_category_name, guess_part_category_name,
 #            get_parts_category_name, get_extra_anoints
@@ -30,15 +30,7 @@
 # <https://www.gnu.org/licenses/>.
 
 import os
-import re
-import sys
-import json
-import glob
-import appdirs
 import sqlite3
-import subprocess
-import configparser
-
 
 class BL3Data(object):
     """

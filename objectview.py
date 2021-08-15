@@ -1,4 +1,5 @@
 # objectview.py
+# Build exe via auto-py-to-exe
 
 # Baseline of GUI and Search Engine derived from tutorial from Izzy Analytics
 # Video: https://www.youtube.com/watch?v=IWDC9vcBIFQ
@@ -23,12 +24,11 @@
 
 #TODO Probably needs more error handling
 #TODO Window resizing?
-#TODO Try making an exe and see what happens?
 #TODO Find a way to make Enter press Search?
-#TODO Installer might be the better play?
+#TODO Reduce exe size (imports that arent needed?)
 #TODO Look into whether zipping the data, or unpacking it directly from user's files is better
 
-import os
+import os, sys
 import PySimpleGUI as gui
 from zipfile import ZipFile
 from bl3data import BL3Data
@@ -39,7 +39,10 @@ Version Number: 0.1.0
 """
 data=BL3Data()
 results=[]
-cwd=os.path.dirname(__file__)
+try:
+	cwd=sys._MEIPASS
+except AttributeError:
+	cwd=os.path.dirname(__file__)
 zipname=os.path.join(cwd, 'utils/objects.zip')
 
 class BL3Object:
