@@ -34,65 +34,67 @@
 #TODO Probably needs more error handling
 #TODO Window resizing?
 #TODO Find a way to make Enter press Search?
-#TODO Look into whether zipping the data, or unpacking it directly from user's files is better
-#TODO Downloading the data from GitHub backend
+#TODO Properly do a progress bar?
 
-import os, sys
+import os, requests
+from PySimpleGUI.PySimpleGUI import WIN_CLOSED
 import PySimpleGUI as gui
 from zipfile import ZipFile
 from bl3data import BL3Data
-
 """
 Initializing some Global Values for ease of use
-Version Number: 0.1.0
+Version Number: 0.2.0
 """
 data=BL3Data()
 results=[]
-try:
-	cwd=sys._MEIPASS
-except AttributeError:
-	cwd=os.path.dirname(__file__)
-zipname=os.path.join(cwd, 'utils/objects.zip')
+data_path='C:\BL3OE'
+zipname=os.path.join(data_path, 'objects.zip')
+sqlname=os.path.join(data_path, 'bl3refs.sqlite3')
 
 class BL3Object:
 	"""
 	Creating an Object for BL3 Objects (good naming I know)
 	"""
 
-	def __init__(self, name):
+	def __init__(self, name, sql_path):
 		"""
 		Takes in the Object Name being searched for
 		And the path its located in
 		"""
 		self.name=name
+		self.sql_path=sql_path
 	
-	def get_refs_to(self, name):
+	def get_refs_to(self, name, sql_path):
 		"""
 		Utilizes bl3data.py from apocalyptech to get all Objects
 		Which reference the Object given
 		"""
 		name=name.replace('.json','')
 		name=f'/{name}'
-		return data.get_refs_to(name)
+		return data.get_refs_to(name, sql_path)
 
-	def get_refs_from(self, name):
+	def get_refs_from(self, name, sql_path):
 		"""
 		Utilizes bl3data.py from apocalyptech to get all Objects
 		Which the given Object references
 		"""
 		name=name.replace('.json','')
 		name=f'/{name}'
-		return data.get_refs_from(name)
+		return data.get_refs_from(name, sql_path)
 
 
 class PyGui:
 	"""
 	Creating a GUI Object
 	"""
-
 	def __init__(self):
 		"""
-		Creating the GUI itself
+		Base Init
+		"""
+
+	def searchwindow(self):
+		"""
+		Creating the Main Search GUI
 		"""
 		global results
 
@@ -108,6 +110,23 @@ class PyGui:
 
 		self.window=gui.Window('BL3 Object Explorer', layout=layout, finalize=True, return_keyboard_events=True)
 		self.window['results'].expand(expand_x=True, expand_y=True)
+
+		search=FileSearch().search
+		pygui=PyGui()
+
+		while True:
+			event, values=self.window.read()
+			if event is None:
+				break
+			if event=='search':
+				search(values, self.window)
+			if event=='results':
+				file_name=values['results']
+				if file_name:
+					if values['json']:
+						pygui.jsonwindow(file_name[0])
+					if values['refs']:
+						pygui.refwindow(file_name[0])
 	
 	def jsonwindow(self, file_name):
 		"""
@@ -127,9 +146,11 @@ class PyGui:
 		"""
 		Window for Displaying Object Ref data
 		"""
-		object=BL3Object(file_name)
-		refs_to=object.get_refs_to(file_name)
-		refs_from=object.get_refs_from(file_name)
+		global sqlname
+
+		object=BL3Object(file_name, sqlname)
+		refs_to=object.get_refs_to(file_name, sqlname)
+		refs_from=object.get_refs_from(file_name, sqlname)
 		refs_to_text=f'Showing Objects that Reference {get_obj_name(file_name)}'
 		refs_from_text=f'Showing Objects that {get_obj_name(file_name)} References'
 
@@ -151,10 +172,29 @@ class PyGui:
 				file_name=values[event]
 				file_name[0]=file_name[0].replace('/','',1)
 				self.window['refstitle'].update(f'Showing Objects that Reference {get_obj_name(file_name[0])}')
-				self.window['resultsto'].update(values=object.get_refs_to(file_name[0]))
+				self.window['resultsto'].update(values=object.get_refs_to(file_name[0], sqlname))
 				self.window['refstitle2'].update(f'Showing Objects that {get_obj_name(file_name[0])} References')
-				self.window['resultsfrom'].update(values=object.get_refs_from(file_name[0]))
+				self.window['resultsfrom'].update(values=object.get_refs_from(file_name[0], sqlname))
 
+	def downloadwindow(self):
+		"""
+		Window for Displaying the downloading progress of backend data
+		"""
+		gui.change_look_and_feel('DarkGrey6')
+		layout=[
+			[gui.Text('Downloading/Updating Object Data...', size=(35, 1), key='dwnldtext')],
+			#[gui.ProgressBar(max_value=100, size=(50, 10), key='dwnldbar', metadata=5)]
+		]
+
+		self.window=gui.Window('Object Data Retrieval', layout=layout, finalize=True)
+		#self.window['dwnldbar'].Widget.config(mode='indeterminate')
+		#progress_value=0
+
+		data_check=get_object_data(self.window)
+		#while True:
+			#progress_value+=self.window['dwnldbar'].metadata
+			#self.window['dwnldbar'].update(current_count=progress_value)
+			
 
 class FileSearch:
 	"""
@@ -208,6 +248,61 @@ def get_json(file_name):
 			return data
 
 
+def get_object_data(window):
+	"""
+	Function for acquiring bundled data from GitHub repo
+	"""
+	global data_path
+
+	if not os.path.exists(zipname):
+		zipurl='https://github.com/SSpyR/BL3-Object-Explorer/blob/main/utils/objects.zip?raw=true'
+		zr=requests.get(zipurl, allow_redirects=True)
+		open(os.path.join(data_path, 'objects.zip'), 'wb').write(zr.content)
+
+	if not os.path.exists(sqlname):
+		sqlurl='https://github.com/SSpyR/BL3-Object-Explorer/blob/main/utils/bl3refs.sqlite3?raw=true'
+		sr=requests.get(sqlurl, allow_redirects=True)
+		open(os.path.join(data_path, 'bl3refs.sqlite3'), 'wb').write(sr.content)
+
+	window.close()
+	return True
+
+
+def data_validity_check():
+	"""
+	Function to check whether we need to acquire new object data
+	"""
+	global data_path
+
+	pygui=PyGui()
+
+	if not os.path.exists(data_path):
+		os.mkdir(data_path)
+
+	url='https://raw.githubusercontent.com/SSpyR/BL3-Object-Explorer/main/data_ver.txt'
+	data_ver_path=os.path.join(data_path, 'data_ver.txt')
+
+	if not os.path.exists(data_ver_path):
+		r=requests.get(url)
+		open(data_ver_path, 'wb').write(r.content)
+		pygui.downloadwindow()
+		return
+	if os.path.exists(data_ver_path):
+		r=requests.get(url)
+		with open(data_ver_path, 'r') as foo:
+			if foo.read() in r.content.__str__():
+				print('Version up to date')
+				if not os.path.exists(zipname) or not os.path.exists(sqlname):
+					pygui.downloadwindow()
+				pass
+			else:
+				print('Version not up to date')
+				open(data_ver_path, 'wb').write(r.content)
+				pygui.downloadwindow()
+
+	return True
+
+
 def get_obj_name(file_name):
 	"""
 	Helper Function to get Object name from path
@@ -223,24 +318,11 @@ def main():
 	"""
 	Function to start the whole thing
 	"""
-	pygui=PyGui()
-	window=pygui.window
+	data_checked=data_validity_check()
 
-	search=FileSearch().search
-
-	while True:
-		event, values=window.read()
-		if event is None:
-			break
-		if event=='search':
-			search(values, window)
-		if event=='results':
-			file_name=values['results']
-			if file_name:
-				if values['json']:
-					pygui.jsonwindow(file_name[0])
-				if values['refs']:
-					pygui.refwindow(file_name[0])
+	if data_checked==True:
+		pygui=PyGui()
+		pygui.searchwindow()
 
 
 if __name__=='__main__':

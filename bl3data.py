@@ -84,7 +84,7 @@ class BL3Data(object):
         self.db = None
         self.curs = None
 
-    def _connect_db(self):
+    def _connect_db(self, file_path):
         """
         Attempts to connect to the refs database, if we haven't already done so.
         This used to connect to a MySQL/MariaDB database but we've since switched
@@ -93,18 +93,19 @@ class BL3Data(object):
         if self.db is None:
             dir=os.path.dirname(__file__)
             dbpath=os.path.join(dir, 'utils/bl3refs.sqlite3')
+            dbpath=file_path
             if not os.path.exists(dbpath):
                 raise RuntimeError('Database file not found: {}'.format(dbpath))
             self.db = sqlite3.connect(dbpath)
             self.curs = self.db.cursor()
 
-    def get_refs_to(self, obj_name):
+    def get_refs_to(self, obj_name, file_path):
         """
         Find all object names which reference the given `obj_name`, and return
         a list of those objects.  Requires a database connection to the refs
         database.
         """
-        self._connect_db()
+        self._connect_db(file_path)
         self.curs.execute("""select o2.name
                 from bl3object o, bl3refs r, bl3object o2
                 where
@@ -114,13 +115,13 @@ class BL3Data(object):
                 """, (obj_name,))
         return [row[0] for row in self.curs.fetchall()]
 
-    def get_refs_from(self, obj_name):
+    def get_refs_from(self, obj_name, file_path):
         """
         Find all object names which `obj_name` references, and return
         a list of those objects.  Requires a database connection to the refs
         database.
         """
-        self._connect_db()
+        self._connect_db(file_path)
         self.curs.execute("""select o2.name
                 from bl3object o, bl3refs r, bl3object o2
                 where
