@@ -1,1 +1,4 @@
 *.exe
+\.vs
+\__pycache__
+*.env
