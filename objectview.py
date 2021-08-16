@@ -286,7 +286,7 @@ def data_validity_check():
 		r=requests.get(url)
 		open(data_ver_path, 'wb').write(r.content)
 		pygui.downloadwindow()
-		return
+		return True
 	if os.path.exists(data_ver_path):
 		r=requests.get(url)
 		with open(data_ver_path, 'r') as foo:
