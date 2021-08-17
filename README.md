@@ -24,7 +24,11 @@ As stated in the Source Code also utilizes apocalyptech's SQLite Database for Ob
 
 Data Excluded for Size and Convience Purposes: L10N Folders, FaceFX files, Any Leftover *.umap files, Any Leftover *.mp4 files
 
+Currently a Windows Only Program (exe)
+
 Will create a folder in C:\ titled BL3OE, this is to store the data to use for searching. Do not delete this folder or its contents unless you are removing the program
+
+If you find yourself browsing this folder you will notice that one of the files is a Zip File, this is done on purpose, you do not need to unpack this file, the program specifically looks for it to be a Zip File
 
 # Contact
 
