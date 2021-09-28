@@ -32,15 +32,14 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #TODO Probably needs more error handling
-#TODO Window resizing?
-#TODO Find a way to make Enter press Search?
 #TODO Properly do a progress bar?
+#TODO Vault Card 2 shit
 
-import os, requests
-from PySimpleGUI.PySimpleGUI import WIN_CLOSED
+import os, requests, pygments, json
 import PySimpleGUI as gui
 from zipfile import ZipFile
 from bl3data import BL3Data
+#from pygments import highlight, lexers, formatters
 """
 Initializing some Global Values for ease of use
 Version Number: 0.2.0
@@ -91,29 +90,44 @@ class PyGui:
 		"""
 		Base Init
 		"""
-
-	def searchwindow(self):
+	
+	def mainwindow(self):
 		"""
-		Creating the Main Search GUI
+		Creating a Base Main Window
 		"""
 		global results
 
-		gui.change_look_and_feel('DarkGrey6')
-		layout=[
+		pygui=PyGui()
+		search=FileSearch().search
+		gui.change_look_and_feel('DarkGrey12')
+		nullSearch=''
+
+		rightlayout=[
+			[gui.Text('JSON Viewer', auto_size_text=True, size=(50, 3), key='jsontitle')],
+			[gui.Text(f'{nullSearch}', auto_size_text=True, size=(50, 1), key='objecttitle')],
+			#[gui.Output(size=(90, 30), expand_x=True, expand_y=True, key='jresults')]
+			[gui.Multiline(size=(90, 30), write_only=True, reroute_cprint=True, reroute_stdout=True, key='jresults')]
+		]
+
+		leftlayout=[
 			[gui.Text('Search Term', size=(11, 1)), gui.Input('', size=(40, 1), key='term'),
 			gui.Radio('Object JSON', group_id='view_type', size=(10, 1), default=True, key='json'),
 			gui.Radio('Object Refs', group_id='view_type', size=(10, 1), key='refs')],
-			[gui.Button('Search', size=(10, 1), key='search')],
+			[gui.Button('Search', size=(10, 1), bind_return_key=True, key='search')],
 			[gui.Text('Enter an object name and press `Search`', key='info')],
-			[gui.Listbox(values=results, size=(100, 28), enable_events=True, key='results')]
+			[gui.Listbox(values=results, size=(100, 28), expand_x=True, expand_y=True, enable_events=True, key='results')]
 		]
 
-		self.window=gui.Window('BL3 Object Explorer', layout=layout, finalize=True, return_keyboard_events=True)
+		layout=[
+			[gui.Text('Borderlands 3 Object Explorer', font='Any 20')],
+			[gui.Pane([gui.Column(leftlayout, element_justification='l', expand_x=True, expand_y=True), gui.Column(rightlayout, element_justification='c', expand_x=True, expand_y=True)], orientation='h', relief=gui.RELIEF_SUNKEN, key='pane')],
+		]
+		self.window=gui.Window('BL3 Object Explorer', layout=layout, finalize=True, resizable=True)
+		self.window.bind('<Configure>', 'Event')
 		self.window['results'].expand(expand_x=True, expand_y=True)
-
-		search=FileSearch().search
-		pygui=PyGui()
-
+		self.window['jresults'].expand(expand_x=True, expand_y=True)
+		self.window['pane'].expand(expand_x=True, expand_y=True)
+		
 		while True:
 			event, values=self.window.read()
 			if event is None:
@@ -124,23 +138,18 @@ class PyGui:
 				file_name=values['results']
 				if file_name:
 					if values['json']:
-						pygui.jsonwindow(file_name[0])
+						pygui.jsonwindow(self.window, file_name[0])
 					if values['refs']:
 						pygui.refwindow(file_name[0])
-	
-	def jsonwindow(self, file_name):
+
+	def jsonwindow(self, window, file_name):
 		"""
 		Window for Displaying JSON Object data
 		"""
-		gui.change_look_and_feel('DarkGrey6')
-		layout=[
-			[gui.Text(f'Showing Object JSON for {get_obj_name(file_name)}', size=(50, 1), key='jsontitle')],
-			[gui.Output(size=(90, 30))]
-		]
-
-		self.window=gui.Window('Object JSON Viewer', layout=layout, finalize=True)
-		print(get_json(file_name))
-		self.window.read()
+		window['jresults'].update('')
+		window['objecttitle'].update(f'Showing JSON for: {get_obj_name(file_name)}')
+		window['jresults'].expand(expand_x=True, expand_y=True)
+		gui.cprint(get_json(file_name), autoscroll=False)
 
 	def refwindow(self, file_name):
 		"""
@@ -154,7 +163,7 @@ class PyGui:
 		refs_to_text=f'Showing Objects that Reference {get_obj_name(file_name)}'
 		refs_from_text=f'Showing Objects that {get_obj_name(file_name)} References'
 
-		gui.change_look_and_feel('DarkGrey6')
+		gui.change_look_and_feel('DarkGrey12')
 		layout=[
 			[gui.Text(refs_to_text, size=(100, 1), key='refstitle')],
 			[gui.Listbox(values=refs_to, size=(100, 10), enable_events=True, key='resultsto')],
@@ -162,7 +171,10 @@ class PyGui:
 			[gui.Listbox(values=refs_from, size=(100,10), enable_events=True, key='resultsfrom')]
 		]
 
-		self.window=gui.Window('Object Refs Viewer', layout=layout, finalize=True)
+		self.window=gui.Window('Object Refs Viewer', modal=True, layout=layout, resizable=True, finalize=True)
+		self.window.bind('<Configure>', 'Event')
+		self.window['resultsto'].expand(expand_x=True, expand_y=True)
+		self.window['resultsfrom'].expand(expand_x=True, expand_y=True)
 
 		while True:
 			event, values=self.window.read()
@@ -180,7 +192,7 @@ class PyGui:
 		"""
 		Window for Displaying the downloading progress of backend data
 		"""
-		gui.change_look_and_feel('DarkGrey6')
+		gui.change_look_and_feel('DarkGrey12')
 		layout=[
 			[gui.Text('Downloading/Updating Object Data...', size=(35, 1), key='dwnldtext')],
 			#[gui.ProgressBar(max_value=100, size=(50, 10), key='dwnldbar', metadata=5)]
@@ -206,6 +218,7 @@ class FileSearch:
 		Initializing here for formality
 		"""
 		global results, zipname
+		global sqlname
 		self.results=results
 		self.zipname=zipname
 		
@@ -232,6 +245,41 @@ class FileSearch:
 					break
 		window['info'].update('Enter a search term and press `Search`')
 
+	# #TODO Work out how to extract NamingStrategy Stuff
+	# def namemap(self):
+	# 	"""
+	# 	Function to create a reference sheet mapping in-game names to file names
+	# 	"""
+	# 	foo=open(namemapfile, 'w')
+	# 	foo.close()
+	# 	with ZipFile(self.zipname, 'r') as zip:
+	# 		for info in zip.infolist():
+	# 			if '/name_' in info.filename.lower():
+	# 				objects=BL3Object(info.filename, sqlname)
+	# 				ref_list=objects.get_refs_to(info.filename, sqlname)
+	# 				try:
+	# 					ref_list[0]
+	# 				except IndexError as e:
+	# 					continue
+	# 				print(ref_list[0])
+	# 				if 'bpchar' in ref_list[0].lower():
+	# 					continue
+	# 				ref_file=ref_list[0].split('/')
+	# 				refName=ref_file[(len(ref_file)-1)]
+
+	# 				try:
+	# 					data=get_json(info.filename)
+	# 					Jdata=json.loads(data)
+	# 					gameName=Jdata[0]['PartName']['string']
+	# 				except (json.decoder.JSONDecodeError, KeyError) as e:
+	# 					continue
+						
+	# 				with open(namemapfile, 'a') as foo:
+	# 					fullString='In-Game Name: {}, File Name: {}\n'.format(gameName, refName)
+	# 					foo.write(fullString)
+	# 					print('Wrote: {} to {}'.format(fullString, namemapfile))
+	# 	print('Writing Complete')
+						
 
 def get_json(file_name):
 	"""
@@ -244,6 +292,8 @@ def get_json(file_name):
 			data=file.read()
 			data=data.decode('utf-8')
 			data=data.strip('\n')
+
+			#colorful_data=highlight(data, lexers.JsonLexer(), formatters.Terminal256Formatter())
 			
 			return data
 
@@ -322,7 +372,7 @@ def main():
 
 	if data_checked==True:
 		pygui=PyGui()
-		pygui.searchwindow()
+		pygui.mainwindow()
 
 
 if __name__=='__main__':
