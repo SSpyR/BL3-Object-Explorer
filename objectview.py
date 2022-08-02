@@ -34,6 +34,8 @@
 #TODO Probably needs more error handling
 #TODO Properly do a progress bar?
 #TODO Vault Card 2 shit
+#TODO Write an SDK script to auto generate ObjDumps for every Object that BL3OE already looks at
+#TODO Wonderlands???
 
 import os, requests, pygments, json
 import PySimpleGUI as gui
